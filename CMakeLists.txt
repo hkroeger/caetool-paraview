@@ -986,3 +986,72 @@ if (NOT WIN32 AND is_git)
   add_dependencies(paraview-source-tgz paraview-source-txz)
   add_dependencies(paraview-source-txz paraview-source-zip)
 endif ()
+
+
+INCLUDE(InstallRequiredSystemLibraries)
+IF(NOT PARAVIEW_BUILD_QT_GUI)
+ SET(CPACK_PACKAGE_NAME "paraview5-offscreen-insightcae")
+ SET(CPACK_DEBIAN_PACKAGE_CONFLICTS "paraview5-insightcae, paraview-insightcae, paraview")
+ set(CPACK_DEBIAN_PACKAGE_DEPENDS "tcl8.5 | tclsh, libavcodec57 (>= 7:3.3.4) | libavcodec-extra57 (>= 7:3.3.4), libavformat57 (>= 7:3.3.4), libavutil55 (>= 7:3.3.4), libc6 (>= 2.15), libcgns3.3 (>= 3.1.4.2), libexpat1 (>= 2.0.1), libfreetype6 (>= 2.3.5), libgcc1 (>= 1:3.0), libgl1-mesa-glx | libgl1, libgl2ps1.4, libhdf5-100, libjpeg8 (>= 8c), libjsoncpp1 (>= 1.7.4), libnetcdf13 (>= 4.0.1), libogg0 (>= 1.0rc3), libopenmpi2, libpng16-16 (>= 1.6.2-1), libprotobuf10, libpython2.7 (>= 2.7), libqt4-help (>= 4:4.5.3), libqt4-network (>= 4:4.5.3), libqtcore4 (>= 4:4.8.0), libqtgui4 (>= 4:4.8.0), libstdc++6 (>= 5.2), libswscale4 (>= 7:3.3.4), libtheora0 (>= 1.0), libtiff5 (>= 4.0.3), libx11-6, libxml2 (>= 2.7.4), libxt6, zlib1g (>= 1:1.2.3.4), python-matplotlib, python-autobahn, python-mpi4py, python-six, python-twisted, libosmesa6")
+ELSE()
+ SET(CPACK_PACKAGE_NAME "paraview5-insightcae")
+ SET(CPACK_DEBIAN_PACKAGE_CONFLICTS "paraview5-offscreen-insightcae, paraview-insightcae, paraview")
+ set(CPACK_DEBIAN_PACKAGE_DEPENDS "tcl8.5 | tclsh, libavcodec57 (>= 7:3.3.4) | libavcodec-extra57 (>= 7:3.3.4), libavformat57 (>= 7:3.3.4), libavutil55 (>= 7:3.3.4), libc6 (>= 2.15), libcgns3.3 (>= 3.1.4.2), libexpat1 (>= 2.0.1), libfreetype6 (>= 2.3.5), libgcc1 (>= 1:3.0), libgl1-mesa-glx | libgl1, libgl2ps1.4, libhdf5-100, libjpeg8 (>= 8c), libjsoncpp1 (>= 1.7.4), libnetcdf13 (>= 4.0.1), libogg0 (>= 1.0rc3), libopenmpi2, libpng16-16 (>= 1.6.2-1), libprotobuf10, libpython2.7 (>= 2.7), libqt4-help (>= 4:4.5.3), libqt4-network (>= 4:4.5.3), libqtcore4 (>= 4:4.8.0), libqtgui4 (>= 4:4.8.0), libstdc++6 (>= 5.2), libswscale4 (>= 7:3.3.4), libtheora0 (>= 1.0), libtiff5 (>= 4.0.3), libx11-6, libxml2 (>= 2.7.4), libxt6, zlib1g (>= 1:1.2.3.4), python-matplotlib, python-autobahn, python-mpi4py, python-six, python-twisted")
+ENDIF()
+SET(CPACK_PACKAGE_VENDOR "Hannes Kroeger")
+SET(CPACK_PACKAGE_CONTACT "hannes@kroegeronline.net")
+SET(CPACK_PACKAGE_DESCRIPTION_SUMMARY "ParaView repackaged")
+SET(CPACK_PACKAGE_VERSION_MAJOR "5")
+SET(CPACK_PACKAGE_VERSION_MINOR "6")
+execute_process(
+  COMMAND git rev-list --count HEAD
+  WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+  OUTPUT_VARIABLE CPACK_PACKAGE_VERSION_PATCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+# SET(CPACK_PACKAGE_VERSION_PATCH "0")
+SET(CPACK_PACKAGE_INSTALL_DIRECTORY "CMake ${CMake_VERSION_MAJOR}.${CMake_VERSION_MINOR}")
+string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
+set(PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
+find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
+
+if(DPKG_PROGRAM)
+
+ SET(CPACK_GENERATOR "DEB")
+ set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+  execute_process(
+    COMMAND ${DPKG_PROGRAM} --print-architecture
+    OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  execute_process(
+    COMMAND lsb_release -rs
+    OUTPUT_VARIABLE CPACK_DEBIAN_SYSTEM_DISTRIBUTION_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+  execute_process(
+    COMMAND bash -c "lsb_release -as 2>/dev/null|sed -n '1p'|tr -d '\n'|tr '[:lower:][:upper:]' '[:lower:][:lower:]'"
+    OUTPUT_VARIABLE CPACK_DEBIAN_SYSTEM_DISTRIBUTION_NAME
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
+
+  set(PACKAGE_VERSION ${PACKAGE_VERSION}~${CPACK_DEBIAN_SYSTEM_DISTRIBUTION_NAME}${CPACK_DEBIAN_SYSTEM_DISTRIBUTION_VERSION})
+  message(STATUS "Package version: ${PACKAGE_VERSION}")
+
+  set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}_${PACKAGE_VERSION}_${CPACK_DEBIAN_PACKAGE_ARCHITECTURE}")
+  
+else(DPKG_PROGRAM)
+
+  if(EXISTS /etc/redhat-release)
+   SET(CPACK_GENERATOR "RPM")
+   execute_process(
+     COMMAND uname -m
+     OUTPUT_VARIABLE CPACK_RPM_PACKAGE_ARCHITECTURE
+     OUTPUT_STRIP_TRAILING_WHITESPACE
+   )
+   set(CPACK_PACKAGE_FILE_NAME "${CPACK_PACKAGE_NAME_LOWERCASE}-${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}-${CPACK_PACKAGE_VERSION_PATCH}.${CPACK_RPM_PACKAGE_ARCHITECTURE}")
+  endif()
+  
+endif(DPKG_PROGRAM)
+INCLUDE(CPack)
+
