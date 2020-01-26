@@ -989,7 +989,7 @@ endif ()
 
 
 INCLUDE(InstallRequiredSystemLibraries)
-IF( (NOT PARAVIEW_BUILD_QT_GUI) OR VTK_OPENGL_HAS_OSMESA )
+IF( NOT PARAVIEW_BUILD_QT_GUI)
  SET(CPACK_PACKAGE_NAME "paraview5-offscreen-insightcae")
  # SET(CPACK_DEBIAN_PACKAGE_CONFLICTS "paraview5-insightcae, paraview-insightcae, paraview")
  configure_file(pvbatch-offscreen.in ${CMAKE_BINARY_DIR}/bin/pvbatch-offscreen @ONLY)
@@ -1019,10 +1019,20 @@ string(TOLOWER "${CPACK_PACKAGE_NAME}" CPACK_PACKAGE_NAME_LOWERCASE)
 set(PACKAGE_VERSION ${CPACK_PACKAGE_VERSION_MAJOR}.${CPACK_PACKAGE_VERSION_MINOR}.${CPACK_PACKAGE_VERSION_PATCH})
 find_program(DPKG_PROGRAM dpkg DOC "dpkg program of Debian-based systems")
 
+if (NOT (${CMAKE_INSTALL_PREFIX} STREQUAL "/usr"))
+ configure_file(CMake/ld_so_conf_d_paraview_conf.in ${CMAKE_BINARY_DIR}/etc/ld.so.conf.d/paraview-offscreen.conf @ONLY)
+ install(FILES ${CMAKE_BINARY_DIR}/etc/ld.so.conf.d/paraview-offscreen.conf DESTINATION /etc/ld.so.conf.d)
+ if(DPKG_PROGRAM)
+  set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
+    "${CMAKE_CURRENT_SOURCE_DIR}/postinst")
+ endif()
+endif()
+
 if(DPKG_PROGRAM)
 
  SET(CPACK_GENERATOR "DEB")
  set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS OFF)
+ set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
   execute_process(
     COMMAND ${DPKG_PROGRAM} --print-architecture
     OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
